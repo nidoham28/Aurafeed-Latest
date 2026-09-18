@@ -8,9 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.nidoham.aurafeed.config.SupabaseCredentials
+import com.nidoham.aurafeed.core.services.SupabaseService
+import com.nidoham.aurafeed.core.util.AurafeedUtil
 import com.nidoham.aurafeed.ui.theme.AurafeedFormFactor
 import com.nidoham.aurafeed.ui.theme.AurafeedTheme
-import com.nidoham.aurafeed.core.util.AurafeedUtil
 
 /**
  * Aurafeed — App Root
@@ -22,6 +24,10 @@ import com.nidoham.aurafeed.core.util.AurafeedUtil
  *  real available window width — not the target platform itself, since a
  *  large Android tablet or a small desktop window can both need [AurafeedFormFactor.Tablet].
  *
+ *  This is also where [SupabaseService] gets bootstrapped, once, before any
+ *  themed UI composes — see the comment at the call site for why that's a
+ *  plain `remember` and not a `LaunchedEffect`.
+ *
  *  Platform target: Kotlin Compose Multiplatform — Android, iOS, Desktop (JVM) only.
  */
 
@@ -31,6 +37,22 @@ private val DesktopBreakpoint: Dp = 840.dp
 
 @Composable
 fun App() {
+    // SupabaseService.initialize() is a plain synchronous, idempotent call —
+    // not a suspend function — so it belongs in `remember`, not
+    // `LaunchedEffect`. `remember` runs inline during this composition,
+    // before Compose recurses into any children below, guaranteeing the
+    // client exists before AurafeedApp (or anything it composes) could ever
+    // read SupabaseService.client. A LaunchedEffect only runs *after* the
+    // first composition completes, which would leave a real — if narrow —
+    // window where a child composed on that first pass could read the
+    // client before it exists and crash.
+    remember {
+        SupabaseService.initialize(
+            url = SupabaseCredentials.url,
+            anonKey = SupabaseCredentials.anonKey,
+        )
+    }
+
     // fillMaxSize is required here: BoxWithConstraints only reports the real
     // window/screen width in `maxWidth` when it is actually asked to fill the
     // available space. Without this modifier it sizes to its content instead,

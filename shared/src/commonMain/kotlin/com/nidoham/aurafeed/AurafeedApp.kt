@@ -9,6 +9,8 @@ import com.nidoham.aurafeed.core.navigation.Auth
 import com.nidoham.aurafeed.core.navigation.Shell
 import com.nidoham.aurafeed.core.navigation.Splash
 import com.nidoham.aurafeed.features.auth.screen.AuthScreen
+import com.nidoham.aurafeed.features.auth.state.AuthMode
+import com.nidoham.aurafeed.features.auth.state.AuthUiState
 import com.nidoham.aurafeed.features.shell.screen.ShellScreen
 import com.nidoham.aurafeed.features.splash.screen.SplashScreen
 
@@ -32,7 +34,27 @@ fun AurafeedApp(
         }
 
         composable<Auth> {
-            AuthScreen()
+            AuthScreen(
+                initialMode = AuthMode.SignIn,
+                onSignInWithEmail = { email, password ->
+                    AuthUiState.Idle
+                },
+                onSignInWithGoogle = {
+                    AuthUiState.Idle
+                },
+                onSignUpWithEmail = { email, password ->
+                    AuthUiState.Idle
+                },
+                onSignUpWithGoogle = {
+                    AuthUiState.Idle
+                },
+                onForgotPassword = {
+                    navController.navigateClearingBackStack(Auth)
+                },
+                onAuthSuccess = {
+                    navController.navigateClearingBackStack(Shell)
+                },
+            )
         }
 
         composable<Shell> {
