@@ -9,6 +9,11 @@ package com.nidoham.aurafeed.features.auth.state
  *  Per project rule: "Never trust the client" — all sign-in / sign-up
  *  operations POST to Supabase Edge Functions, never call Supabase
  *  client SDK directly from the UI. The UI just renders [AuthUiState].
+ *
+ *  v2 additions:
+ *   • [PasswordChecks.metCount] — drives the sign-up strength meter.
+ *   • [suggestEmailFix] — one-tap correction for common email domain typos,
+ *     shown as a suggestion under the email field (never beside an error).
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,6 +157,10 @@ data class PasswordChecks(
     val allMet: Boolean get() = longEnough && hasLetter && hasDigit
 }
 
+/** Number of satisfied rules — feeds the strength meter's 0f..1f fraction. */
+val PasswordChecks.metCount: Int
+    get() = listOf(longEnough, hasLetter, hasDigit).count { it }
+
 fun passwordChecks(password: String): PasswordChecks = PasswordChecks(
     longEnough = password.length >= PASSWORD_MIN_LENGTH,
     hasLetter = password.any { it.isLetter() },
@@ -208,4 +217,47 @@ object AuthStrings {
         "auth.error.network"             to "No connection. Check your network and try again.",
         "auth.error.unknown"             to "That didn't work. Try again.",
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. EMAIL TYPO SUGGESTION — one-tap "Did you mean …?" fix
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Frequently mistyped email domains mapped to their likely intended value.
+ * Only the most common, unambiguous typos belong here — suggesting a domain
+ * the user didn't mean is worse than no suggestion.
+ */
+private val EMAIL_DOMAIN_TYPOS: Map<String, String> = mapOf(
+    "gmial.com" to "gmail.com",
+    "gmal.com" to "gmail.com",
+    "gamil.com" to "gmail.com",
+    "gnail.com" to "gmail.com",
+    "gmail.con" to "gmail.com",
+    "gmail.co" to "gmail.com",
+    "gmail.vom" to "gmail.com",
+    "yahooo.com" to "yahoo.com",
+    "yaho.com" to "yahoo.com",
+    "yahoo.con" to "yahoo.com",
+    "hotmial.com" to "hotmail.com",
+    "hotmal.com" to "hotmail.com",
+    "hotmail.con" to "hotmail.com",
+    "outlok.com" to "outlook.com",
+    "outloook.com" to "outlook.com",
+    "outlook.con" to "outlook.com",
+)
+
+/**
+ * Returns the corrected email if the typed domain is a known typo, else null.
+ *
+ * Call sites must only show the suggestion when [validateEmail] already
+ * passes — a suggestion sitting next to a validation error is contradictory.
+ * The fix preserves the local part and any uppercase letters the user typed.
+ */
+fun suggestEmailFix(email: String): String? {
+    val at = email.lastIndexOf('@')
+    if (at <= 0 || at == email.length - 1) return null
+    val domain = email.substring(at + 1).lowercase()
+    val fixedDomain = EMAIL_DOMAIN_TYPOS[domain] ?: return null
+    return email.substring(0, at + 1) + fixedDomain
 }
