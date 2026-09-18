@@ -8,7 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,7 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Email
@@ -65,17 +65,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size as GeometrySize
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -89,6 +84,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import aurafeed.shared.generated.resources.Res
+import aurafeed.shared.generated.resources.app_logo
+import aurafeed.shared.generated.resources.google
 import com.nidoham.aurafeed.features.auth.state.AuthFieldError
 import com.nidoham.aurafeed.features.auth.state.AuthStrings
 import com.nidoham.aurafeed.features.auth.state.PASSWORD_MIN_LENGTH
@@ -102,51 +100,42 @@ import com.nidoham.aurafeed.ui.theme.ErrorDefault
 import com.nidoham.aurafeed.ui.theme.SuccessDefault
 import com.nidoham.aurafeed.ui.theme.TextOnBrandMin
 import com.nidoham.aurafeed.ui.theme.WarningDefault
-
-/**
- * Aurafeed — Shared Auth Components (v4)
- *
- * Visual language:
- *  • Soft inset fields with a 4dp violet focus halo (not a naked outline).
- *  • Form sits in a bordered, elevated [AuthFormCard] — 24dp corners.
- *  • Primary CTA is the Aura gradient; disabled is a dim solid so it
- *    never looks tappable.
- *  • Password strength is three segments (weak / almost / strong),
- *    not a single bar that hides progress.
- *  • Compact brand header on mobile; desktop brand lives on the ad pane.
- */
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 private fun fieldSupportingText(
     error: AuthFieldError?,
     helper: String?,
-): @Composable () -> Unit = {
-    val text = error?.let { AuthStrings.forError(it) } ?: helper.orEmpty()
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = if (error != null) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
-    )
+): @Composable (() -> Unit)? {
+    val text = error?.let { AuthStrings.forError(it) } ?: helper
+    if (text == null) return null
+    return {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (error != null) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        )
+    }
 }
 
 @Composable
 private fun authFieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
-    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.32f),
-    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.18f),
-    errorContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.28f),
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.45f),
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.22f),
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.12f),
+    errorContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.20f),
     focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-    unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+    unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
     errorIndicatorColor = MaterialTheme.colorScheme.error,
     focusedLabelColor = MaterialTheme.colorScheme.primary,
     unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
     cursorColor = MaterialTheme.colorScheme.primary,
     focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
-    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
 )
 
 private val AuthControlCorner
@@ -199,20 +188,14 @@ fun AuthLogoMark(size: Dp, modifier: Modifier = Modifier) {
             .border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "a",
-            color = Color.White,
-            fontSize = glyphSize,
-            fontWeight = FontWeight.Bold,
+        Image(
+            painter = painterResource(Res.drawable.app_logo),
+            contentDescription = null,
+            modifier = Modifier.size(30.dp),
         )
     }
 }
 
-/**
- * Mobile header. Compact row (logo + wordmark) then the page title —
- * the previous stacked 56dp mark + gradient wordmark + title + subtitle
- * ate too much vertical space before the form.
- */
 @Composable
 fun AuthBrandHeader(
     title: String,
@@ -230,14 +213,14 @@ fun AuthBrandHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            AuthLogoMark(size = 36.dp)
-            Text(
-                text = "Aurafeed",
-                style = typography.titleLarge.copy(
-                    brush = AurafeedTheme.brushes.auraHero,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-            )
+//            AuthLogoMark(size = 36.dp)
+//            Text(
+//                text = "Aurafeed",
+//                style = typography.titleLarge.copy(
+//                    brush = AurafeedTheme.brushes.auraHero,
+//                    fontWeight = FontWeight.SemiBold,
+//                ),
+//            )
         }
         Spacer(modifier = Modifier.height(tokens.spacing.sm))
         Text(
@@ -319,43 +302,53 @@ fun AuthEmailField(
         ),
         keyboardActions = keyboardActions,
         isError = error != null,
-        supportingText = {
-            when {
-                error != null -> Text(
-                    text = AuthStrings.forError(error),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                suggestion != null -> Row(verticalAlignment = Alignment.CenterVertically) {
+        supportingText = when {
+            error != null -> {
+                {
                     Text(
-                        text = "Did you mean ",
+                        text = AuthStrings.forError(error),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.error,
                     )
+                }
+            }
+            suggestion != null -> {
+                {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Did you mean ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = suggestion,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable(
+                                role = Role.Button,
+                                onClickLabel = "Use suggested email $suggestion",
+                            ) { onValueChange(suggestion) },
+                        )
+                        Text(
+                            text = "?",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            helper != null -> {
+                {
                     Text(
-                        text = suggestion,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable(
-                            role = Role.Button,
-                            onClickLabel = "Use suggested email $suggestion",
-                        ) { onValueChange(suggestion) },
-                    )
-                    Text(
-                        text = "?",
+                        text = helper,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                helper != null -> Text(
-                    text = helper,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                else -> Text(text = "", style = MaterialTheme.typography.bodySmall)
             }
+            else -> null
         },
         shape = AuthControlCorner,
         colors = authFieldColors(),
@@ -444,6 +437,8 @@ fun AuthPasswordStrength(
     modifier: Modifier = Modifier,
 ) {
     val tokens = AurafeedTheme.tokens
+    val met = checks.metCount
+    val strengthText = strengthWord(met)
 
     AnimatedVisibility(
         visible = visible,
@@ -455,11 +450,12 @@ fun AuthPasswordStrength(
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(top = tokens.spacing.xs, bottom = tokens.spacing.xs)
-                .clearAndSetSemantics { },
+                .padding(vertical = tokens.spacing.xs)
+                .semantics(mergeDescendants = true) {
+                    stateDescription = "Password strength: $strengthText, $met of 3 criteria met."
+                },
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            val met = checks.metCount
             val meterColor by animateColorAsState(
                 targetValue = when {
                     met >= 3 -> SuccessDefault
@@ -482,7 +478,7 @@ fun AuthPasswordStrength(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = strengthWord(met),
+                    text = strengthText,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                     ),
@@ -575,15 +571,17 @@ fun AuthSubmitButton(
 ) {
     val tokens = AurafeedTheme.tokens
     val shape = AuthControlCorner
-    val backgroundBrush: Brush = if (enabled && !loading) {
+    val isInteractive = enabled && !loading
+
+    val backgroundBrush: Brush = if (isInteractive) {
         AurafeedTheme.brushes.auraHero
     } else {
-        SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.45f))
+        SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.38f))
     }
 
     Button(
         onClick = onClick,
-        enabled = enabled && !loading,
+        enabled = isInteractive,
         modifier = modifier
             .fillMaxWidth()
             .height(tokens.sizes.touchTargetMin)
@@ -594,7 +592,7 @@ fun AuthSubmitButton(
             containerColor = Color.Transparent,
             contentColor = TextOnBrandMin,
             disabledContainerColor = Color.Transparent,
-            disabledContentColor = TextOnBrandMin.copy(alpha = 0.85f),
+            disabledContentColor = TextOnBrandMin.copy(alpha = 0.70f),
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 0.dp,
@@ -658,64 +656,11 @@ fun AuthGoogleButton(
 
 @Composable
 private fun GoogleLogoMark(size: Dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(Color.White)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.size(size * 0.74f)) {
-            val strokeWidth = this.size.minDimension * 0.34f
-            val radius = (this.size.minDimension - strokeWidth) / 2f
-            val center = Offset(this.size.width / 2f, this.size.height / 2f)
-            val arcSize = GeometrySize(radius * 2f, radius * 2f)
-            val topLeft = Offset(center.x - radius, center.y - radius)
-
-            drawArc(
-                color = Color(0xFF4285F4),
-                startAngle = -50f,
-                sweepAngle = 100f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-            )
-            drawArc(
-                color = Color(0xFF34A853),
-                startAngle = 50f,
-                sweepAngle = 80f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-            )
-            drawArc(
-                color = Color(0xFFFBBC05),
-                startAngle = 130f,
-                sweepAngle = 80f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-            )
-            drawArc(
-                color = Color(0xFFEA4335),
-                startAngle = 210f,
-                sweepAngle = 100f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-            )
-            drawRect(
-                color = Color(0xFF4285F4),
-                topLeft = Offset(center.x - strokeWidth * 0.1f, center.y - strokeWidth / 2f),
-                size = GeometrySize(radius + strokeWidth * 0.6f, strokeWidth),
-            )
-        }
-    }
+    Image(
+        painter = painterResource(Res.drawable.google),
+        contentDescription = null,
+        modifier = Modifier.size(size),
+    )
 }
 
 @Composable

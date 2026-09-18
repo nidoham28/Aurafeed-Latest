@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,31 +44,31 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nidoham.aurafeed.ui.theme.AurafeedMotion
-import com.nidoham.aurafeed.ui.theme.AurafeedTheme
+import aurafeed.shared.generated.resources.Res
+import aurafeed.shared.generated.resources.ad_calm
+import aurafeed.shared.generated.resources.ad_secure
+import aurafeed.shared.generated.resources.ad_share
+import aurafeed.shared.generated.resources.app_logo
+import aurafeed.shared.generated.resources.google
 import com.nidoham.aurafeed.ui.theme.AuraGlowSoft
 import com.nidoham.aurafeed.ui.theme.AuraGlowStrong
 import com.nidoham.aurafeed.ui.theme.AuraPrimary80
-import com.nidoham.aurafeed.ui.theme.DuskGradientEnd
-import com.nidoham.aurafeed.ui.theme.DuskGradientStart
+import com.nidoham.aurafeed.ui.theme.AurafeedMotion
+import com.nidoham.aurafeed.ui.theme.AurafeedTheme
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * Desktop-only left pane: first-party campaign ads.
  *
- * Photography is optional — pass [art] to paint a full-bleed image per
- * campaign (Coil / composeResources). Without it, a cinematic dusk
- * gradient matching the campaign's color grade is used so the pane
- * never looks empty.
- *
- * Story-style progress bars auto-advance every 5.6s; hover/focus does
- * not exist as a pointer lock here (the HTML preview pauses on hover).
+ * Story-style progress bars auto-advance every 5.6s.
  */
 data class AuthCampaign(
     val id: String,
     val kicker: String,
     val headline: String,
     val body: String,
-    val gradient: List<Color>,
+    val images: DrawableResource
 )
 
 val DefaultAuthCampaigns: List<AuthCampaign> = listOf(
@@ -76,21 +77,21 @@ val DefaultAuthCampaigns: List<AuthCampaign> = listOf(
         kicker = "Stories",
         headline = "Glow a little louder.",
         body = "Share the quiet moments that actually matter — without the noise.",
-        gradient = listOf(Color(0xFF1A1020), DuskGradientStart, Color(0xFF5B2A8C)),
+        images = Res.drawable.ad_share
     ),
     AuthCampaign(
         id = "calm",
         kicker = "Feed",
         headline = "A calmer place to land.",
         body = "Less shouting. More of the people you actually chose to keep close.",
-        gradient = listOf(Color(0xFF140C1C), Color(0xFF3D1B5C), Color(0xFF6E162E)),
+        images = Res.drawable.ad_calm
     ),
     AuthCampaign(
         id = "secure",
         kicker = "Safety",
         headline = "You’ll know first.",
         body = "Unknown devices are flagged the moment they appear — quietly, immediately.",
-        gradient = listOf(Color(0xFF0B0B12), DuskGradientEnd, Color(0xFF2B1245)),
+        images = Res.drawable.ad_secure
     ),
 )
 
@@ -100,21 +101,23 @@ private const val AdDurationMs = 5600
 fun AuthAdPanel(
     modifier: Modifier = Modifier,
     campaigns: List<AuthCampaign> = DefaultAuthCampaigns,
-    art: @Composable (AuthCampaign) -> Unit = {},
 ) {
+    if (campaigns.isEmpty()) return
+
     val tokens = AurafeedTheme.tokens
     var index by remember { mutableIntStateOf(0) }
+    val safeIndex = index.coerceIn(0, campaigns.lastIndex)
     val fill = remember { Animatable(0f) }
 
-    LaunchedEffect(index, campaigns.size) {
+    LaunchedEffect(safeIndex, campaigns.size) {
         fill.snapTo(0f)
         fill.animateTo(1f, tween(AdDurationMs, easing = LinearEasing))
-        index = (index + 1) % campaigns.size
+        index = (safeIndex + 1) % campaigns.size
     }
 
-    val campaign = campaigns[index]
+    val campaign = campaigns[safeIndex]
 
-    Box(modifier = modifier.clip(RoundedCornerShape(0.dp))) {
+    Box(modifier = modifier) {
         AnimatedContent(
             targetState = campaign.id,
             transitionSpec = {
@@ -122,15 +125,31 @@ fun AuthAdPanel(
             },
             label = "auth-ad-slide",
         ) { id ->
-            val current = campaigns.first { it.id == id }
+            val current = campaigns.firstOrNull { it.id == id } ?: campaign
             Box(Modifier.fillMaxSize()) {
+
+                // 1. Image Background using Compose Multiplatform painterResource
+                Image(
+                    painter = painterResource(current.images),
+                    contentDescription = current.headline,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // 2. Base overlay to ensure readability
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(Brush.verticalGradient(current.gradient)),
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Black.copy(alpha = 0.3f),
+                                0.6f to Color.Transparent,
+                                1f to Color.Black.copy(alpha = 0.8f)
+                            )
+                        )
                 )
-                art(current)
-                // Soft brand orbs so a missing photo still feels designed.
+
+                // 3. Soft brand orbs
                 Box(
                     Modifier
                         .size(320.dp)
@@ -141,20 +160,10 @@ fun AuthAdPanel(
                             CircleShape,
                         ),
                 )
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                0f to Color(0x480A0612),
-                                0.45f to Color(0x140A0612),
-                                1f to Color(0xE0080410),
-                            ),
-                        ),
-                )
             }
         }
 
+        // Header / Logo
         Row(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -167,7 +176,11 @@ fun AuthAdPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             ) {
-                AuthLogoMark(size = 32.dp)
+                Image(
+                    painter = painterResource(Res.drawable.app_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp),
+                )
                 Text(
                     text = "Aurafeed",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -189,6 +202,7 @@ fun AuthAdPanel(
             )
         }
 
+        // Footer Text and Progress Bars
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -201,10 +215,7 @@ fun AuthAdPanel(
                         text = item.kicker.uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = androidx.compose.ui.unit.TextUnit(
-                                1.6f,
-                                androidx.compose.ui.unit.TextUnitType.Sp,
-                            ),
+                            letterSpacing = 1.6.sp,
                         ),
                         color = AuraPrimary80,
                     )
@@ -221,7 +232,7 @@ fun AuthAdPanel(
                     Text(
                         text = item.body,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.78f),
+                        color = Color.White.copy(alpha = 0.9f),
                         modifier = Modifier.widthIn(max = 420.dp),
                     )
                 }
@@ -235,8 +246,8 @@ fun AuthAdPanel(
             ) {
                 campaigns.forEachIndexed { i, _ ->
                     val fraction = when {
-                        i < index -> 1f
-                        i == index -> fill.value
+                        i < safeIndex -> 1f
+                        i == safeIndex -> fill.value
                         else -> 0f
                     }
                     val tickInteraction = remember(i) { MutableInteractionSource() }
@@ -262,18 +273,5 @@ fun AuthAdPanel(
                 }
             }
         }
-    }
-}
-
-/** Optional full-bleed painter slot used by [AuthAdPanel.art]. */
-@Composable
-fun AuthCampaignArt(painter: androidx.compose.ui.graphics.painter.Painter?) {
-    if (painter != null) {
-        androidx.compose.foundation.Image(
-            painter = painter,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
     }
 }

@@ -129,8 +129,8 @@ fun RegisterScreen(
     }
 
     AuthLayout(
-        title = "Create your aura",
-        subtitle = "Join Aurafeed in seconds.",
+        title = "Create account",
+        subtitle = "Join Aurafeed to explore new stories.",
         modifier = modifier,
         footer = {
             AuthFooterPrompt(

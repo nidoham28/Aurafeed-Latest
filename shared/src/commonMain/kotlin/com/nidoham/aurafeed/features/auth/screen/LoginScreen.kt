@@ -124,7 +124,7 @@ fun LoginScreen(
 
     AuthLayout(
         title = "Welcome back",
-        subtitle = "Sign in to continue to your aura.",
+        subtitle = "Sign in to continue to Aurafeed.",
         modifier = modifier,
         footer = {
             AuthFooterPrompt(

@@ -50,6 +50,8 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
+            implementation(libs.coil.compose)
+
             implementation(libs.supabase.kt)
             implementation(libs.supabase.auth)
             implementation(libs.supabase.postgrest)
