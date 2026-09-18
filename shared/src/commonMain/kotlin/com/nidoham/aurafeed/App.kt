@@ -3,12 +3,14 @@ package com.nidoham.aurafeed
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nidoham.aurafeed.ui.theme.AurafeedFormFactor
 import com.nidoham.aurafeed.ui.theme.AurafeedTheme
+import com.nidoham.aurafeed.core.util.AurafeedUtil
 
 /**
  * Aurafeed — App Root
@@ -35,6 +37,14 @@ fun App() {
     // and formFactor detection below would be measuring the wrong thing.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val formFactor = remember(maxWidth) { resolveFormFactor(maxWidth) }
+
+        // Publish the same resolved formFactor to AurafeedUtil so non-UI code
+        // (ViewModels, platform bridges) can observe DESKTOP/MOBILE without
+        // needing a composition. SideEffect runs after a successful
+        // composition; updateFormFactor no-ops internally when unchanged.
+        SideEffect {
+            AurafeedUtil.updateFormFactor(formFactor)
+        }
 
         AurafeedTheme(formFactor = formFactor) {
             AurafeedApp()
