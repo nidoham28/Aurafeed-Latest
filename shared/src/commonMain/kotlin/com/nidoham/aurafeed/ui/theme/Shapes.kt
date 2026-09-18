@@ -20,6 +20,10 @@ import androidx.compose.ui.unit.dp
  *  All shapes are [RoundedCornerShape]; cut-corner shapes are kept available
  *  for special branding contexts (e.g. business badges) but not used by
  *  default in any Material role.
+ *
+ *  Platform target: Kotlin Compose Multiplatform — Android, iOS, Desktop (JVM)
+ *  only. Pure `commonMain`, built only on the stable `androidx.compose.material3.Shapes`
+ *  / `androidx.compose.foundation.shape` APIs — no deprecated or platform-specific calls.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────

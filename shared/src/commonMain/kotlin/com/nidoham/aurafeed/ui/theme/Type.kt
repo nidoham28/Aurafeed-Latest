@@ -23,13 +23,17 @@ import androidx.compose.ui.unit.sp
  *
  *  Font family is wired in [Theme.kt] via [LocalAurafeedFontFamily], so that
  *  platform-specific asset loading (Inter / NotoSans) stays out of this file.
+ *
+ *  Platform target: Kotlin Compose Multiplatform — Android, iOS, Desktop (JVM)
+ *  only. Pure `commonMain`, built only on the stable `androidx.compose.material3.Typography`
+ *  API — no deprecated `androidx.compose.material.Typography` (Material 2) usage.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. FONT FAMILY PROVIDER — implemented in Theme.kt (or Font.kt)
 // ─────────────────────────────────────────────────────────────────────────────
 
-val LocalAurafeedFontFamily = staticCompositionLocalOf { FontFamily.Default }
+val LocalAurafeedFontFamily = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. LINE HEIGHT STYLE — Material 3 "tight" / "comfortable" defaults

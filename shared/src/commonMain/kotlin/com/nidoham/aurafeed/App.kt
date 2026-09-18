@@ -5,77 +5,51 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.nidoham.aurafeed.core.navigation.AurafeedNavHost
-import com.nidoham.aurafeed.core.navigation.AurafeedNavigationManager
-import com.nidoham.aurafeed.core.navigation.MutableScreenRegistry
-import com.nidoham.aurafeed.core.navigation.NavigationManager
 import com.nidoham.aurafeed.ui.theme.AurafeedFormFactor
 import com.nidoham.aurafeed.ui.theme.AurafeedTheme
 
 /**
- * Aurafeed — Root App Composable
+ * Aurafeed — App Root
  * ───────────────────────────────────────────────────────────
- *  Production launch shell. Wires [AurafeedTheme] → [AurafeedNavHost] so
- *  the whole app shares one theme + one navigation graph.
+ *  Single composable entry point shared by every target's platform `main()`:
+ *  Android `MainActivity`, iOS `MainViewController`, and the Desktop (JVM)
+ *  `main()` all call [App] directly. It is the one place that decides which
+ *  [AurafeedFormFactor] the rest of the app should render for, based on the
+ *  real available window width — not the target platform itself, since a
+ *  large Android tablet or a small desktop window can both need [AurafeedFormFactor.Tablet].
  *
- *  Per project rules:
- *   • Mobile + Desktop are separate variants — auto-detected at runtime
- *     via [BoxWithConstraints] on window width (the NavHost then renders
- *     a bottom-bar on Mobile vs a sidebar on Desktop, all from one graph).
- *   • No plain spinner / loader anywhere — the NavHost uses shimmer
- *     skeletons for every unwired route (see ui/components/shimmer).
- *   • Never trust the client — the [NavigationManager] auth-gates routes
- *     via [NavigationManager.setAuthGate]; the auth repository should
- *     install that gate at app startup (see wiring in platform entry points).
+ *  Platform target: Kotlin Compose Multiplatform — Android, iOS, Desktop (JVM) only.
  */
+
+/** Material 3 standard window-size breakpoints (compact / medium / expanded). */
+private val TabletBreakpoint: Dp = 600.dp
+private val DesktopBreakpoint: Dp = 840.dp
 
 @Composable
 fun App() {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        val widthDp = maxWidth
-        val formFactor = when {
-            widthDp < 600.dp -> AurafeedFormFactor.Mobile
-            widthDp < 840.dp -> AurafeedFormFactor.Tablet
-            else -> AurafeedFormFactor.Desktop
-        }
-
-        // Single NavigationManager instance per app session.
-        // The auth repository should call `navManager.setAuthGate { route -> ... }`
-        // once the session state resolves.
-        val navManager: NavigationManager = remember { AurafeedNavigationManager() }
-
-        // Single ScreenRegistry instance — extend at app startup by registering
-        // real screen implementations per Route subtype.
-        val registry = remember {
-            MutableScreenRegistry().apply {
-                // ── Wire real screens here as you build them ─────────────
-                // register<Route.Feed> { FeedScreen() }
-                // register<Route.Explore> { ExploreScreen() }
-                // register<Route.ProfileView> { route -> ProfileScreen(route.userId) }
-                // register<Route.PostDetail> { route -> PostDetailScreen(route.postId) }
-                // register<Route.DmThread> { route -> DmThreadScreen(route.threadId) }
-                // ... etc.
-                //
-                // Until screens are wired, the NavHost shows shimmer placeholders,
-                // so the app remains visually complete during development.
-            }
-        }
+    // fillMaxSize is required here: BoxWithConstraints only reports the real
+    // window/screen width in `maxWidth` when it is actually asked to fill the
+    // available space. Without this modifier it sizes to its content instead,
+    // and formFactor detection below would be measuring the wrong thing.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val formFactor = remember(maxWidth) { resolveFormFactor(maxWidth) }
 
         AurafeedTheme(formFactor = formFactor) {
-            AurafeedNavHost(
-                navManager = navManager,
-                registry = registry,
-            )
+            AurafeedApp()
         }
     }
 }
 
-@Preview
-@Composable
-private fun AppPreview() {
-    App()
+/**
+ * Maps an available width to an [AurafeedFormFactor] using Material 3's
+ * standard compact/medium/expanded breakpoints. Pulled out as a plain
+ * function (rather than inlined in a `when`) so it's independently testable
+ * without needing a composition.
+ */
+private fun resolveFormFactor(width: Dp): AurafeedFormFactor = when {
+    width >= DesktopBreakpoint -> AurafeedFormFactor.Desktop
+    width >= TabletBreakpoint -> AurafeedFormFactor.Tablet
+    else -> AurafeedFormFactor.Mobile
 }

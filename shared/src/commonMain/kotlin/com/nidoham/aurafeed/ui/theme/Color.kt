@@ -16,10 +16,17 @@ import androidx.compose.ui.graphics.Color
  *   - `<Role>` tonal steps use Material 3 0–100 scale (0 = darkest, 100 = lightest)
  *   - Semantic / interaction colors use plain descriptive names (e.g. `LikeRed`)
  *
+ *  Platform target: Kotlin Compose Multiplatform — Android, iOS, Desktop (JVM)
+ *  only. Pure `commonMain`; built only on `androidx.compose.ui.graphics.Color`.
+ *
  *  Rules:
  *   - All colors are [Color] vals — immutable, [androidx.compose.runtime.Stable] by default
  *   - No demo / placeholder colors — every token here is referenced by UI
  *   - Light + Dark variants are paired explicitly
+ *   - Includes the full Material 3 role set used by current M3 components,
+ *     including `surfaceContainer*` tonal roles (sections 12 & 13) and
+ *     `*Fixed*` roles (section 13b), so no component silently falls back
+ *     to a library default color.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -80,22 +87,33 @@ val AuraTertiary95  = Color(0xFFEAFBF9)
 // ─────────────────────────────────────────────────────────────────────────────
 
 val AuraNeutral0    = Color(0xFF000000)
+val AuraNeutral4    = Color(0xFF08080D)
 val AuraNeutral5    = Color(0xFF0B0B12)
+val AuraNeutral6    = Color(0xFF0D0D15)
 val AuraNeutral10   = Color(0xFF111118)
-val AuraNeutral15  = Color(0xFF16161F)
+val AuraNeutral12   = Color(0xFF14141C)
+val AuraNeutral15   = Color(0xFF16161F)
+val AuraNeutral17   = Color(0xFF191922)
 val AuraNeutral20   = Color(0xFF1C1C26)
-val AuraNeutral25  = Color(0xFF22222E)
+val AuraNeutral22   = Color(0xFF1F1F29)
+val AuraNeutral24   = Color(0xFF212230)
+val AuraNeutral25   = Color(0xFF22222E)
 val AuraNeutral30   = Color(0xFF2A2A36)
 val AuraNeutral40   = Color(0xFF3D3D4C)
 val AuraNeutral50   = Color(0xFF565668)
 val AuraNeutral60   = Color(0xFF717180)
 val AuraNeutral70   = Color(0xFF8E8E9B)
 val AuraNeutral80   = Color(0xFFB0B0BB)
-val AuraNeutral85  = Color(0xFFC6C6CE)
+val AuraNeutral85   = Color(0xFFC6C6CE)
+val AuraNeutral87   = Color(0xFFD2D2D9)
 val AuraNeutral90   = Color(0xFFDFDFE4)
+val AuraNeutral92   = Color(0xFFE5E5E9)
+val AuraNeutral94   = Color(0xFFEAEAEE)
 val AuraNeutral95   = Color(0xFFEFEFF2)
+val AuraNeutral96   = Color(0xFFF2F2F5)
 val AuraNeutral98   = Color(0xFFF8F8FA)
 val AuraNeutral99   = Color(0xFFFDFBFF)
+val AuraNeutral100  = Color(0xFFFFFFFF)
 
 val AuraNeutralVariant20 = Color(0xFF1E1A24)
 val AuraNeutralVariant30 = Color(0xFF2A2531)
@@ -111,6 +129,7 @@ val AuraNeutralVariant90 = Color(0xFFECE1F0)
 // Error — "Signal Red" (destructive actions, validation failures)
 val ErrorDark10   = Color(0xFF2C0004)
 val ErrorDark20   = Color(0xFF5C0009)
+val ErrorDark30   = Color(0xFF93000A)
 val ErrorDark40   = Color(0xFFBA1A1A)
 val ErrorDark60   = Color(0xFFFF8980)
 val ErrorDark80   = Color(0xFFFFB4AB)
@@ -124,6 +143,10 @@ val ErrorDefault     = ErrorDark40
 val ErrorOnDefault   = Color(0xFFFFFFFF)
 val ErrorContainer   = ErrorDark90
 val ErrorOnContainer = ErrorDark20
+
+/** Dark-theme error container pair — kept as named tokens (never raw hex in Theme.kt). */
+val ErrorContainerDark   = ErrorDark30
+val ErrorOnContainerDark = ErrorDark90
 
 // Warning — "Amber" (incomplete state, rate-limit, quota)
 val WarningDark40  = Color(0xFFB45C00)
@@ -229,6 +252,8 @@ val ShimmerAuraHigh     = Color(0xFF3D1B5C)
 // 11. OVERLAYS / SCRIMS — modals, image viewer, video controls
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Material 3 `ColorScheme.scrim` role — modal barrier behind sheets/dialogs. */
+val ScrimBase      = Color(0xFF000000)
 val ScrimStrong    = Color(0xE6111118)  // 90% dark scrim
 val ScrimMedium    = Color(0xB3111118)  // 70% dark scrim
 val ScrimSoft      = Color(0x66111118)  // 40% dark scrim
@@ -267,8 +292,18 @@ val LightOnSurfaceVariant = AuraNeutralVariant30
 val LightSurfaceTint      = AuraPrimary40
 val LightInverseSurface   = AuraNeutral20
 val LightInverseOnSurface = AuraNeutral95
+val LightInversePrimary   = AuraPrimary80
 val LightOutline          = AuraNeutralVariant50
 val LightOutlineVariant   = AuraNeutralVariant80
+
+// Material 3 "surface container" tonal roles (cards, nav bars, sheets, app bars)
+val LightSurfaceDim              = AuraNeutral87
+val LightSurfaceBright           = AuraNeutral98
+val LightSurfaceContainerLowest  = AuraNeutral100
+val LightSurfaceContainerLow     = AuraNeutral96
+val LightSurfaceContainer        = AuraNeutral94
+val LightSurfaceContainerHigh    = AuraNeutral92
+val LightSurfaceContainerHighest = AuraNeutral90
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 13. DARK THEME ROLE COLORS — paired with [AuraDarkColors] in Theme.kt
@@ -299,8 +334,39 @@ val DarkOnSurfaceVariant = AuraNeutralVariant80
 val DarkSurfaceTint      = AuraPrimary80
 val DarkInverseSurface   = AuraNeutral90
 val DarkInverseOnSurface = AuraNeutral20
+val DarkInversePrimary   = AuraPrimary40
 val DarkOutline          = AuraNeutralVariant60
 val DarkOutlineVariant   = AuraNeutralVariant30
+
+// Material 3 "surface container" tonal roles (cards, nav bars, sheets, app bars)
+val DarkSurfaceDim              = AuraNeutral6
+val DarkSurfaceBright           = AuraNeutral24
+val DarkSurfaceContainerLowest  = AuraNeutral4
+val DarkSurfaceContainerLow     = AuraNeutral10
+val DarkSurfaceContainer        = AuraNeutral12
+val DarkSurfaceContainerHigh    = AuraNeutral17
+val DarkSurfaceContainerHighest = AuraNeutral22
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 13b. FIXED COLOR ROLES — identical across light/dark (M3 "fixed" roles),
+//      used for elements that must keep brand color regardless of theme
+//      (e.g. story-ring "seen" badge, onboarding illustrations).
+// ─────────────────────────────────────────────────────────────────────────────
+
+val PrimaryFixed            = AuraPrimary90
+val PrimaryFixedDim         = AuraPrimary80
+val OnPrimaryFixed          = AuraPrimary10
+val OnPrimaryFixedVariant   = AuraPrimary30
+
+val SecondaryFixed          = AuraSecondary90
+val SecondaryFixedDim       = AuraSecondary80
+val OnSecondaryFixed        = AuraSecondary10
+val OnSecondaryFixedVariant = AuraSecondary30
+
+val TertiaryFixed           = AuraTertiary90
+val TertiaryFixedDim        = AuraTertiary80
+val OnTertiaryFixed         = AuraTertiary10
+val OnTertiaryFixedVariant  = AuraTertiary30
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 14. PLATFORM-SPECIFIC TINTS — distinct for Mobile vs Desktop variants

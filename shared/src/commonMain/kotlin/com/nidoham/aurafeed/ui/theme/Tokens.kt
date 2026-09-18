@@ -19,6 +19,9 @@ import kotlin.math.roundToInt
  *  both, and let [AurafeedTheme] inject the correct one via [LocalAurafeedTokens].
  *
  *  All values are deliberately tuned — no arbitrary magic numbers.
+ *
+ *  Platform target: Kotlin Compose Multiplatform — Android, iOS, Desktop (JVM)
+ *  only. Pure `commonMain`; no deprecated or platform-specific APIs.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
